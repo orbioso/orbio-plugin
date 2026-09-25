@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "orbio": {
+      "type": "http",
+      "url": "https://api.orbio.so/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ORBIO_API_KEY}"
+      }
+    }
+  }
+}

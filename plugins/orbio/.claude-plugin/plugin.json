@@ -1,0 +1,21 @@
+{
+  "name": "orbio",
+  "description": "Pay for AI inference and agent tools with an Orbio key: models, X reads, web search, on-chain reads, and publishing to social accounts your owner connected.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Orbio Labs",
+    "url": "https://orbio.so"
+  },
+  "homepage": "https://orbio.so",
+  "repository": "https://github.com/orbioso/orbio-plugin",
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "gateway",
+    "agents",
+    "social",
+    "x",
+    "inference",
+    "credit"
+  ]
+}

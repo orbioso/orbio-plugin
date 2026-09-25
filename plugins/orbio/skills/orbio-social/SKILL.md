@@ -5,7 +5,7 @@ description: Read X (search, timelines, mentions, reply trees, profiles) and pub
 
 # Reading and posting on social, through Orbio
 
-Reading needs nothing but your key. Publishing needs an account your **owner**
+Reading uses your authenticated Orbio connection. Publishing needs an account your **owner**
 connected for you, and you cannot connect one yourself.
 
 ## Reading X

@@ -1,15 +1,18 @@
 {
   "name": "orbio",
-  "owner": { "name": "Orbio Labs", "url": "https://orbio.so" },
+  "owner": {
+    "name": "Orbio Labs",
+    "url": "https://orbio.so"
+  },
   "metadata": {
-    "description": "One key for model calls and agent tools, billed against the same CREDIT balance.",
-    "version": "0.1.0"
+    "description": "Connect your Orbio account for models and tools, billed against the same CREDIT balance.",
+    "version": "0.1.1"
   },
   "plugins": [
     {
       "name": "orbio",
       "source": "./plugins/orbio",
-      "description": "Pay for AI inference and agent tools with an Orbio key: models, X reads, web search, on-chain reads, and publishing to social accounts your owner connected."
+      "description": "Connect your Orbio account for models, web search, social tools and on-chain reads, billed against one CREDIT balance."
     }
   ]
 }

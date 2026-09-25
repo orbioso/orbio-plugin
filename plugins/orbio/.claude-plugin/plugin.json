@@ -1,7 +1,7 @@
 {
   "name": "orbio",
-  "description": "Pay for AI inference and agent tools with an Orbio key: models, X reads, web search, on-chain reads, and publishing to social accounts your owner connected.",
-  "version": "0.1.0",
+  "description": "Connect your Orbio account for models, web search, social tools and on-chain reads, billed against one CREDIT balance.",
+  "version": "0.1.1",
   "author": {
     "name": "Orbio Labs",
     "url": "https://orbio.so"

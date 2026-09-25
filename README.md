@@ -1,24 +1,29 @@
 # Orbio for Claude Code
 
-One key for model calls and agent tools, billed against the same CREDIT balance.
+Connect your Orbio account for model calls and agent tools, billed against the same $CREDIT balance.
 
 ```bash
-/plugin marketplace add orbioso/orbio-plugin
-/plugin install orbio@orbio
-export ORBIO_API_KEY=orb_...
+claude plugin marketplace add orbioso/orbio-plugin
+claude plugin install orbio@orbio
+claude
 ```
 
-That is the whole setup. The plugin brings:
+Then open `/mcp`, select the Orbio plugin server, and choose **Authenticate**.
+Sign in with the same Orbio account you use on the launchpad. Installation does
+not need an API key; browser sign-in authorizes the connection separately and
+leaves existing gateway keys active.
 
-- **The MCP server** at `api.orbio.so/api/mcp`, so every tool arrives with its
+Already installed version 0.1.0? Run `claude plugin marketplace update orbio`,
+then `claude plugin update orbio@orbio`, and restart Claude Code before signing in.
+
+The plugin brings:
+
+- **The MCP server** at `www.orbio.so/api/mcp`, so every tool arrives with its
   price, its arguments and the shape of its answer. No wrapper code.
 - **Two skills.** `orbio-gateway` covers the key, the balance, what a call costs
   before you make it, and what each failure means. `orbio-social` covers reading
   X and publishing.
 - **`/orbio-costs`**, which prints the live catalogue and your balance.
-
-Get a key at [orbio.so/dashboard](https://orbio.so/dashboard), or ask the MCP
-server for one with `orbio_create_key` once you are connected.
 
 ## What you can do with it
 
@@ -31,7 +36,7 @@ quote is above it, so a mistaken `limit` costs nothing.
 
 ## Publishing needs a connected account
 
-Reading needs only a key. Publishing acts as you on an account you own, so it
+Reading uses your connected account. Publishing acts as you on an account you own, so it
 is authorised in the dashboard at [orbio.so/dashboard#tools](https://orbio.so/dashboard#tools),
 signed in to the account whose gateway key the agent uses. A key can post once an account
 is connected; a key can never connect one. Orbio stores an account id and never
@@ -48,6 +53,5 @@ the wallet key in your process and signs locally.
 
 - Tools, prices and schemas, live: `GET https://api.orbio.so/api/v1/tools`
 - API reference: [orbio.so/launchpad/docs](https://orbio.so/launchpad/docs)
-- MCP setup for other clients: [orbio.so/mcp](https://orbio.so/mcp)
 
 MIT.

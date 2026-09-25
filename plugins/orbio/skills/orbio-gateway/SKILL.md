@@ -5,6 +5,12 @@ description: Use an Orbio key to call models and tools, understand what a call c
 
 # Working with Orbio
 
+The Claude Code plugin connects through browser sign-in. Use its MCP tools
+without asking for an API key or requiring `ORBIO_API_KEY` in the environment.
+If authentication is needed, ask the user to open `/mcp`, select Orbio and
+Authenticate. Never create, rotate or revoke a gateway key just to connect the
+plugin. API keys are a separate option for direct HTTP and SDK integrations.
+
 Orbio is one key and one balance for both model calls and tools. The same
 `ORBIO_API_KEY` that talks to a model also reads X, searches the web and reads
 Robinhood Chain, and every call settles against the same CREDIT balance.
@@ -19,7 +25,7 @@ Check what a call costs. `GET /api/v1/tools` is the catalogue, and it is
 machine readable:
 
 ```bash
-curl https://api.orbio.so/api/v1/tools -H "Authorization: Bearer $ORBIO_API_KEY"
+curl https://api.orbio.so/api/v1/tools
 ```
 
 Each entry carries `input_schema`, `output_schema` and a `price` block:
@@ -85,11 +91,11 @@ rather than failing the whole batch, and is not charged.
 
 ## Over MCP
 
-Everything above is also on the MCP server at `https://api.orbio.so/api/mcp`,
+Everything above is also on the MCP server at `https://www.orbio.so/api/mcp`,
 where tool names use underscores (`social_x_posts`). The price is in each
 tool's description and the shape of the answer is in its output schema. Prefer
 MCP when you have it: you get the catalogue automatically and do not have to
 build requests by hand.
 
 `orbio_get_balance` reads the balance. `orbio_get_key_status` reads the key.
-`orbio_create_key` makes one if the account has none.
+Only create or replace a key when the user explicitly requests that separate action.

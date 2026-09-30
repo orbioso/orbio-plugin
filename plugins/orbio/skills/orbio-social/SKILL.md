@@ -1,6 +1,6 @@
 ---
 name: orbio-social
-description: Read X (search, timelines, mentions, reply trees, profiles) and publish posts to social accounts through Orbio. Use when asked to read tweets, track mentions, measure engagement, or post to X, LinkedIn, Instagram, TikTok or other platforms.
+description: Read X (search, timelines, mentions, reply trees, profiles) and publish to social accounts through Orbio, with images, threads, replies, quotes and polls. Use when asked to read tweets, track mentions, answer people, measure engagement, or post to X, LinkedIn, Instagram, TikTok or other platforms.
 ---
 
 # Reading and posting on social, through Orbio
@@ -61,8 +61,51 @@ posts to every connected account.
 { "text": "Shipped v2. Fees now compound hourly.", "platforms": ["twitter"], "max_cost": "0.05" }
 ```
 
-It returns `post_id`, `status` and a `platformPostUrl` per platform once live.
-`social.post.status` follows a post afterwards and is free.
+It returns `post_id`, `status`, and per platform a `platformPostUrl` and the
+platform's own `platformPostId` once live. `social.post.status` follows a post
+afterwards and is free. `social.accounts` lists what your owner connected,
+with each handle, and is free too.
+
+### Everything a post can carry
+
+| Argument | What it does | Where |
+| --- | --- | --- |
+| `media` | Up to 4 images or one GIF on X (10 elsewhere). Each an `https` URL or a `data:image/png;base64,...` URL | Every platform; video everywhere but X |
+| `thread` | Follow-up posts after `text`, each replying to the one before | X, Threads, Bluesky |
+| `reply_to` | A post id or status URL to answer | X only |
+| `quote` | A post id or status URL to quote. No media with it | X only |
+| `poll` | `{ "options": ["yes", "no"], "duration_minutes": 1440 }` | X only, alone |
+
+An image a gateway model returned is already a `data:` URL: pass it as it is.
+Inline files are at most 5 MB; host anything larger and pass its `https` URL.
+
+`reply_to`, `quote` and `poll` go to X alone, even with no `platforms` named.
+A `thread` with no `platforms` goes to the connected platforms that thread.
+
+### Answering people on X
+
+X only accepts a reply to **your own posts or posts that mention you**, and a
+quote of your own posts, posts that mention you, or a conversation you are in.
+So the loop is:
+
+1. `social.accounts` for your X handle.
+2. `social.x.posts` with `mentions_of` set to it.
+3. `social.post` with `reply_to` set to a mention's `id_str`.
+
+Replying to a stranger's post that does not mention you is refused by X, not
+by Orbio, and the post comes back `failed` with X's reason.
+
+### Taking a post down
+
+`social.post.delete` takes the `post_id` you were given and removes it from
+every platform it went to, or only the `platforms` you name. Only your own
+posts. Instagram, TikTok and Snapchat cannot take a post down through any API,
+so those copies come back as `kept`. A thread comes down whole. It costs
+0.0055 CREDIT for each post it removes from X, and nothing elsewhere.
+
+A copy the platform refuses, such as an X reply to somebody who never
+mentioned you, comes back `failed` and is not charged as a post. Its image
+uploads are, because they ran before the refusal.
 
 ### Your owner connects the accounts, in the dashboard
 
@@ -81,25 +124,32 @@ page and the action. When that happens:
 Disconnecting is the same, in reverse: your owner revokes it and your next post
 refuses with the same 409.
 
-### Posting to X costs far more if the text contains a link
+### An X post cannot contain a link
 
-X charges to publish, and charges **over thirteen times more** for a post
-containing an `http` or `https` link. Orbio passes that through at cost, so:
+X charges **over thirteen times more** to publish a post containing an `http`
+or `https` link: $0.200 against $0.015. That is X's own pricing, not a markup.
+Orbio does not offer it, so a post whose text contains a link is refused when X
+is one of the targets, and the error says so.
 
-- a plain post to X costs about **0.0187 CREDIT**
-- the same post with a link costs about **0.2222 CREDIT**
+- a post to X costs about **0.0187 CREDIT**, whatever it says
+- each image or GIF on X adds another **0.0165**, because X meters the upload as a post
+- each follow-up in an X thread adds **0.0165**
+- links, media and threads are free on every other platform, which charges nothing per post
 
-This is X's pricing, not a markup. If you are posting many links, that is a
-real budget, and `max_cost` is quoted from your text, so a link post is refused
-against a ceiling set for a plain one. If a link is not essential, leaving it
-out is a large saving. Other platforms carry no per-post charge.
+To point at another X post, use `quote` with its id. Pasting its URL into the
+text is a link, and is refused.
+
+Write the post without the link, or name only the platforms that are not X. If
+the link is the whole point, put it in the bio or a pinned post rather than in
+every post.
 
 ### Publishing is immediate and cannot be undone
 
 `social.post` publishes now. There is no draft and no scheduling through this
-tool, and nothing takes a post back once a platform has it. Treat it as you
-would any irreversible action: if the text was not given to you explicitly,
-show it to your owner before sending it.
+tool. `social.post.delete` can take most posts down again, but people may have
+seen it by then, and Instagram, TikTok and Snapchat cannot be undone at all.
+Treat it as you would any irreversible action: if the text was not given to you
+explicitly, show it to your owner before sending it.
 
 Retries are safe. Each call carries an idempotency key, so a call you retry
 because you never saw the answer returns the original post rather than posting

@@ -13,7 +13,7 @@ plugin. API keys are a separate option for direct HTTP and SDK integrations.
 
 Orbio is one key and one balance for both model calls and tools. The same
 `ORBIO_API_KEY` that talks to a model also reads X, searches the web and reads
-Robinhood Chain, and every call settles against the same CREDIT balance.
+fourteen EVM networks, and every call settles against the same CREDIT balance.
 
 One CREDIT is one dollar. Balances are exact integers of micro-dollars behind
 the scenes, so never do money arithmetic in floating point when an exact figure

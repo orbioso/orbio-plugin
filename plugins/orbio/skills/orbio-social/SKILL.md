@@ -14,12 +14,13 @@ connected for you, and you cannot connect one yourself.
 
 | Argument | Gets you |
 | --- | --- |
-| `handle` | That handle's posts and replies |
+| `handle` | That handle's own posts, from its profile timeline. Add `replies: true` for its replies too |
 | `mentions_of` | Posts mentioning that handle, excluding its own |
 | `conversation_id` | The reply tree under a post id |
 | `query` | A raw X search, with any X search operator |
 
-Plus `sort` (`Latest` or `Top`), `limit` (up to 100) and `cursor`.
+Plus `sort` (`Latest` or `Top`, for searches), `limit` (up to 100) and `cursor`.
+A `handle` together with `query` searches that handle's posts instead.
 
 Each post carries `reply_count`, `retweet_count`, `quote_count`,
 `favorite_count`, `views_count` and `bookmark_count`, so engagement needs no
@@ -40,10 +41,20 @@ raise `limit` past 100; page instead.
 
 ### One gotcha worth knowing
 
-Accounts X has shadow-banned return **zero results** from search, including
-from `handle`. That is not the same as "this account is inactive". If you get
-zero and you expected posts, say the result was empty rather than concluding
-the account is dormant.
+X search leaves new and shadow-banned accounts out, so a `query` such as
+`from:yourhandle` can return **zero results** for an account that posts every
+hour. That is not the same as "this account is inactive". To read an account's
+own posts, use `handle` on its own: it reads the profile timeline, which X does
+not filter. A timeline read costs one more result than the page, for the
+profile lookup it needs.
+
+## Reading posts by id
+
+`social.x.lookup` takes `ids`, up to 50 post ids or status URLs, and returns
+each post with its current likes, views, replies, reposts, quotes and
+bookmarks. Use it to see how your own posts did: the `platformPostId` that
+`social.post` returns is the id to pass. A post that does not exist comes back
+with an `error` field and is not charged.
 
 ## Reading profiles
 
@@ -54,8 +65,9 @@ name was wrong.
 
 ## Publishing
 
-`social.post` takes `text` and optionally `platforms`. With no `platforms` it
-posts to every connected account.
+`social.post` takes `text` and `platforms`, both required. A post goes only to
+the platforms you name, never to every connected account, so it cannot spend
+another platform's allowance or your CREDIT by accident.
 
 ```json
 { "text": "Shipped v2. Fees now compound hourly.", "platforms": ["twitter"], "max_cost": "0.05" }
@@ -64,7 +76,26 @@ posts to every connected account.
 It returns `post_id`, `status`, and per platform a `platformPostUrl` and the
 platform's own `platformPostId` once live. `social.post.status` follows a post
 afterwards and is free. `social.accounts` lists what your owner connected,
-with each handle, and is free too.
+with each handle and what is left of today's posting allowance, and is free too.
+
+### Daily posting allowance
+
+The publisher caps each connected account per UTC day, resetting at 00:00 UTC:
+
+| Platform | Original posts | Replies |
+| --- | --- | --- |
+| X | 50 | 100, a separate allowance |
+| Instagram, Facebook | 100 | |
+| Threads | 250 | |
+| Pinterest | 25 | |
+| Others (TikTok aside) | 50 | |
+
+A post past the cap is refused and not charged. Every `social.post` answer
+carries `remaining_today` for each platform it posted to, and `social.accounts`
+reports the same as `today`, so pace yourself from those rather than finding
+the cap by hitting it. `null` means the count could not be read, not zero; TikTok
+is not counted here. Separately, X itself may throttle an account that posts in
+bursts, so spread posts through the day.
 
 ### Everything a post can carry
 
@@ -79,8 +110,8 @@ with each handle, and is free too.
 An image a gateway model returned is already a `data:` URL: pass it as it is.
 Inline files are at most 5 MB; host anything larger and pass its `https` URL.
 
-`reply_to`, `quote` and `poll` go to X alone, even with no `platforms` named.
-A `thread` with no `platforms` goes to the connected platforms that thread.
+`reply_to`, `quote` and `poll` exist only on X, so name `["twitter"]` alone
+for them. A `thread` can name X, Threads and Bluesky.
 
 ### Answering people on X
 

@@ -1,7 +1,7 @@
 {
   "name": "orbio",
   "description": "Connect your Orbio account for models, web search, social tools and on-chain reads, billed against one CREDIT balance.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": {
     "name": "Orbio Labs",
     "url": "https://orbio.so"

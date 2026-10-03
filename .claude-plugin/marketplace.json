@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Connect your Orbio account for models and tools, billed against the same CREDIT balance.",
-    "version": "0.1.3"
+    "version": "0.1.4"
   },
   "plugins": [
     {

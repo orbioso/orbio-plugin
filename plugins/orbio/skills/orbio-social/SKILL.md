@@ -10,58 +10,81 @@ connected for you, and you cannot connect one yourself.
 
 ## Reading X
 
-`social.x.posts` covers four shapes through one tool. Give exactly one of:
+Reads come from X's own API. `social.x.posts` covers four shapes through one
+tool. Give exactly one of:
 
 | Argument | Gets you |
 | --- | --- |
 | `handle` | That handle's own posts, from its profile timeline. Add `replies: true` for its replies too |
-| `mentions_of` | Posts mentioning that handle, excluding its own |
-| `conversation_id` | The reply tree under a post id |
+| `mentions_of` | Posts mentioning that handle, excluding its own, from its mentions timeline |
+| `conversation_id` | The reply tree under a post id or status URL |
 | `query` | A raw X search, with any X search operator |
 
-Plus `sort` (`Latest` or `Top`, for searches), `limit` (up to 100) and `cursor`.
-A `handle` together with `query` searches that handle's posts instead.
+Plus `sort` (`Latest` or `Top`, for searches), `limit` (up to 100), `authors`,
+`archive` and `cursor`. A `handle` together with `query` (or any two together)
+searches instead, and so does `mentions_of` with `sort: "Top"`. Search covers
+the **last seven days**; `archive: true` searches everything X has, and a
+reply tree older than a week is searched that way on its own. The archive is
+limited to one request a second across Orbio, so it can answer `429` with
+`Retry-After` when busy. The two timelines are not filtered or ranked, so they
+find new accounts that search leaves out, and they reach further back. If X
+will not show a handle's timeline, a protected account most often, the answer
+carries an `error` beside no posts, and the account read X billed is charged.
 
 Each post carries `reply_count`, `retweet_count`, `quote_count`,
 `favorite_count`, `views_count` and `bookmark_count`, so engagement needs no
-second call.
+second call, and its author's profile in `user` unless you pass
+`authors: false`.
 
-### Pages are the unit, not posts
+### What a read costs
 
-X returns about **20 posts per page and charges for all of them**, and there is
-no way to ask for fewer. So:
+X bills every resource an answer returns, and Orbio charges exactly that plus
+its margin:
 
-- `limit: 5` and `limit: 20` fetch the same page and **cost the same**. If you
-  want 5, ask for 20 and use 5.
-- `limit: 21` costs two pages. Ask for 20 or 40, not 21.
-- `max_cost` below one page is refused before anything is fetched.
+- each **post**: **0.0055 CREDIT**
+- each **account**: **0.011 CREDIT**, which is each new author, a profile, or
+  the handle a timeline is read from
 
-To read further, pass the `next_cursor` you were given back as `cursor`. Do not
-raise `limit` past 100; page instead.
+Each post and each account is charged **once per UTC day** for your account,
+however often you read it. Polling your mentions every minute costs only the
+mentions and authors that are new since the last read, so polling is cheap and
+a repeat of the same read is free.
+
+X sends at least **10 posts a search and 5 a timeline**, and charges for every
+one, so `limit: 3` on a search reads (and pays for) ten and shows you three;
+the other seven come back free when you read on. The call is held at its worst
+case, every post new with its own author: **0.165 CREDIT** for a search of ten.
+What is charged is what came back and was new, usually far less. `max_cost`
+below the hold is refused before anything is read. `authors: false` drops the
+account reads: user then holds only `id_str`.
+
+To read further, pass the `next_cursor` you were given back as `cursor`. It
+picks up exactly after the last post you were shown, so nothing is skipped or
+repeated. Do not raise `limit` past 100; page instead.
 
 ### One gotcha worth knowing
 
-X search leaves new and shadow-banned accounts out, so a `query` such as
+X search leaves new and low-reach accounts out, so a `query` such as
 `from:yourhandle` can return **zero results** for an account that posts every
 hour. That is not the same as "this account is inactive". To read an account's
 own posts, use `handle` on its own: it reads the profile timeline, which X does
-not filter. A timeline read costs one more result than the page, for the
-profile lookup it needs.
+not filter. To read who is talking to you, use `mentions_of` on its own.
 
 ## Reading posts by id
 
-`social.x.lookup` takes `ids`, up to 50 post ids or status URLs, and returns
-each post with its current likes, views, replies, reposts, quotes and
-bookmarks. Use it to see how your own posts did: the `platformPostId` that
-`social.post` returns is the id to pass. A post that does not exist comes back
-with an `error` field and is not charged.
+`social.x.lookup` takes `ids`, up to 100 post ids or status URLs in one call,
+and returns each post with its current likes, views, replies, reposts, quotes
+and bookmarks, in the order asked. Use it to see how your own posts did: the
+`platformPostId` that `social.post` returns is the id to pass. A post that does
+not exist comes back with an `error` field and is not charged. Nothing here is
+cached, so the counts are as they stand.
 
 ## Reading profiles
 
-`social.x.profile` takes `handles` and returns bio, follower counts, join date
-and verification. A handle that does not exist comes back with an `error` field
-instead of the rest, and is not charged, so a batch never fails because one
-name was wrong.
+`social.x.profile` takes `handles`, up to 100 in one call, and returns bio,
+follower counts, join date and verification. A handle that does not exist comes
+back with an `error` field instead of the rest, and is not charged, so a batch
+never fails because one name was wrong.
 
 ## Publishing
 
@@ -155,24 +178,28 @@ page and the action. When that happens:
 Disconnecting is the same, in reverse: your owner revokes it and your next post
 refuses with the same 409.
 
-### An X post cannot contain a link
+### A link on X costs thirteen times more, so you opt in
 
-X charges **over thirteen times more** to publish a post containing an `http`
-or `https` link: $0.200 against $0.015. That is X's own pricing, not a markup.
-Orbio does not offer it, so a post whose text contains a link is refused when X
-is one of the targets, and the error says so.
+X charges **over thirteen times more** to publish a post containing a link:
+$0.200 against $0.015. That is X's own pricing, not a markup. So a post whose
+text contains a link is refused when X is one of the targets, unless you pass
+**`allow_links: true`**, which accepts that rate. Then the quote includes it
+and `max_cost` bounds it like any other call.
 
-- a post to X costs about **0.0187 CREDIT**, whatever it says
+- a post to X costs about **0.0187 CREDIT**
+- a post to X with a link, with `allow_links: true`, costs about **0.2222 CREDIT**
 - each image or GIF on X adds another **0.0165**, because X meters the upload as a post
-- each follow-up in an X thread adds **0.0165**
+- each follow-up in an X thread adds **0.0165**, or 0.22 if it carries a link
 - links, media and threads are free on every other platform, which charges nothing per post
 
-To point at another X post, use `quote` with its id. Pasting its URL into the
-text is a link, and is refused.
+A link is what X links, not only `https://`: a bare domain such as
+`example.com`, `orbio.so` or `bit.ly/x` counts, and so does a file name that is
+also a domain, such as `readme.md`, because X turns all of them into links and
+bills the post so. `node.js`, `$TICKER.X`, `v4.1` and email addresses do not.
 
-Write the post without the link, or name only the platforms that are not X. If
-the link is the whole point, put it in the bio or a pinned post rather than in
-every post.
+To point at another X post, use `quote` with its id. Pasting its URL into the
+text is a link. If the link is the whole point and you post often, put it in
+the bio or a pinned post rather than in every post.
 
 ### Publishing is immediate and cannot be undone
 
@@ -186,9 +213,31 @@ Retries are safe. Each call carries an idempotency key, so a call you retry
 because you never saw the answer returns the original post rather than posting
 twice. Retrying with *different* text is a different post.
 
+## When a call is refused
+
+Every refusal says why in `error.message`, and a refused call is **never
+charged**: the hold goes back. Over HTTP (`POST /api/v1/tools/{tool}`):
+
+| Status | `error.code` | What it means | What to do |
+| --- | --- | --- | --- |
+| 400 | `invalid_request` | The arguments are wrong, or `max_cost` is below the quote | Fix the call; retrying the same one fails the same way |
+| 401 | `invalid_api_key`, `key_rotated` | The key is not live | Use the account's current key |
+| 402 | `ORB02`, `ORB03` | The balance cannot hold this call's quote, or is empty | Lower `limit` or the work asked for, or wait for credit |
+| 403 | `insufficient_scope` | An app's token was not granted this tool | Connect the app again asking for it |
+| 404 | `unknown_tool` | No tool by that name | Read `GET /api/v1/tools` |
+| 409 | `not_connected`, `connection_revoked`, `unsupported_platform` | Your owner has to connect an account first | Do not retry; relay the message to your owner |
+| 422 | `upstream_refused` | The provider said no for a reason you own: a handle that does not exist, a protected account, a malformed query | Change the call |
+| 429 | `ORB10`, `ORB11` | Orbio's own per-key limits: requests a minute, or in flight at once | Wait `Retry-After` seconds |
+| 429 | `upstream_rate_limited` | X is limiting how fast Orbio reads this kind of data | Wait `Retry-After` seconds, then send the same call |
+| 503 | `upstream_unavailable` | The provider is down, or Orbio's own account with it needs attention | Try again later; nothing about your call is wrong |
+| 502 | `tool_failed` | The call broke mid-flight, and the provider may have done the work | Check your usage before retrying: it settles at no more than its quote |
+
+Over MCP the same refusals come back as a tool error carrying the same message.
+
 ## What runs behind these
 
-Reads come from a REST provider that answers in about a second. Instagram,
-TikTok and Reddit scraping still runs as a job and can take longer, answering
-`202` with an id when it outlives the request. The tool names never change when
-a provider does, so build against the names.
+X reads come from X's own API, as a single request each. Publishing goes
+through a provider that holds your owner's authorisation. Instagram, TikTok and
+Reddit scraping still runs as a job and can take longer, answering `202` with
+an id when it outlives the request. The tool names never change when a provider
+does, so build against the names.

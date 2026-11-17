@@ -22,15 +22,17 @@ The plugin brings:
   price, its arguments and the shape of its answer. No wrapper code.
 - **Three skills.** `orbio-gateway` covers the key, the balance, what a call costs
   before you make it, and what each failure means. `orbio-social` covers reading
-  X and publishing. `orbio-media` covers images, video and characters on Higgsfield.
+  X, Reddit, Instagram and TikTok, and publishing. `orbio-media` covers images,
+  video and characters on fal.
 - **`/orbio-costs`**, which prints the live catalogue and your balance.
 
 ## What you can do with it
 
 Call any model, read X (search, timelines, mentions, reply trees, profiles),
 search and scrape the web, read Robinhood Chain, scrape Instagram, TikTok and
-Reddit, publish to social accounts, and generate images, video shots, video edits and
-trained characters with Higgsfield.
+Reddit, publish to social accounts, and generate images, videos with sound (from a
+prompt, a first frame, or image, video and audio references), video edits and saved
+characters with fal.
 
 Every call takes `max_cost` in CREDIT and is refused before it runs if the
 quote is above it, so a mistaken `limit` costs nothing.

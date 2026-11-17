@@ -1,6 +1,6 @@
 ---
 name: orbio-social
-description: Read X (search, timelines, mentions, reply trees, profiles) and publish to social accounts through Orbio, with images, threads, replies, quotes and polls. Use when asked to read tweets, track mentions, answer people, measure engagement, or post to X, LinkedIn, Instagram, TikTok or other platforms.
+description: Read X (search, timelines, mentions, reply trees, profiles), Reddit, Instagram and TikTok, and publish to social accounts through Orbio, with images, threads, replies, quotes and polls. Use when asked to read tweets or Reddit threads, track mentions, answer people, measure engagement, or post to X, LinkedIn, Instagram, TikTok or other platforms.
 ---
 
 # Reading and posting on social, through Orbio
@@ -85,6 +85,39 @@ cached, so the counts are as they stand.
 follower counts, join date and verification. A handle that does not exist comes
 back with an `error` field instead of the rest, and is not charged, so a batch
 never fails because one name was wrong.
+
+## Reading Reddit, Instagram and TikTok
+
+`social.reddit`, `social.instagram` and `social.tiktok` are jobs rather than
+requests, and each takes a `limit`. `social.reddit` takes:
+
+| Argument | Gets you |
+| --- | --- |
+| `urls` | Subreddit, post or user URLs on reddit.com |
+| `search` | A search term, with or without `urls`. Add `subreddit` to keep it to one |
+| `sort` | `hot`, `new`, `top`, `rising` or `relevance` |
+| `time` | `hour`, `day`, `week`, `month`, `year` or `all`, with `top` or `relevance` |
+| `comments` | Comments to read for each post, up to 100. None by default |
+
+`limit` is the posts in the whole call, shared across the sources you give.
+Each row has a `type`: a post carries `title`, `selfText`, `author`, `subreddit`,
+`score`, `numComments` and `url`, and a comment carries `body`, `author`, `score`,
+`postId` and `parentId`. The rows arrive as `items`.
+
+A Reddit call costs **0.0033 CREDIT** to start, **0.0011 CREDIT** a post, and is
+held at **0.000715 CREDIT** a comment. So `limit: 10` holds 0.0143 CREDIT, and
+adding `comments: 10` holds 0.0858. You are charged for what came back.
+
+### A read that takes longer than the request
+
+Most reads answer in the request. One that does not answers `202` with
+`status: "running"`, an `id` and `collect_with: "social.status"`. Do not send the
+read again, which would pay for it twice. Call `social.status` with that `id`
+every `retry_after_seconds` until `status` is `completed` or `failed`, and the
+rows are in `items`. `social.status` is free, works at any balance, and answers
+only the account that started the read. A failed run hands over what it found
+and is charged what it cost. `cost` can be `null` for a moment after the rows
+arrive while the bill lands; you already have the rows, so there is no need to wait for it.
 
 ## Publishing
 
@@ -239,5 +272,5 @@ Over MCP the same refusals come back as a tool error carrying the same message.
 X reads come from X's own API, as a single request each. Publishing goes
 through a provider that holds your owner's authorisation. Instagram, TikTok and
 Reddit scraping still runs as a job and can take longer, answering `202` with
-an id when it outlives the request. The tool names never change when a provider
+an id that `social.status` collects when it outlives the request. The tool names never change when a provider
 does, so build against the names.
